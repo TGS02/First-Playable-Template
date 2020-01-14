@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Player.h"
 
 #include <iostream>
 #define WIDTH 1024
@@ -11,6 +12,7 @@ using namespace std;
 Engine::Engine():g_bRunning(false)                          //class initializer way
 {
 	cout << "Constructing engine class...\n";
+	
 }
 
 
@@ -28,6 +30,8 @@ bool Engine::init(const char* title, int xpos, int ypos, int width, int height, 
 			g_pRenderer = SDL_CreateRenderer(g_pWindow, -1, 0);
 			if (g_pRenderer != nullptr) // Renderer init success.
 			{
+				m_pTexture = IMG_LoadTexture(g_pRenderer, "Background.png");
+				player.loadPlayer(g_pRenderer);
 
 			}
 			else return false; // Renderer init fail.
@@ -37,7 +41,8 @@ bool Engine::init(const char* title, int xpos, int ypos, int width, int height, 
 	else return false; // SDL init fail.
 	g_fps = (Uint32)round((1 / (double)FPS) * 1000); // Sets FPS in milliseconds and rounds.
 	g_iKeystates = SDL_GetKeyboardState(nullptr);
-
+	m_src = { 0,0, 800, 400 };
+	m_dst = { 0,0, WIDTH, HEIGHT };
 	g_bRunning = true; // Everything is okay, start the engine.
 	cout << "Success!" << endl;
 	return true;
@@ -90,7 +95,7 @@ bool Engine::keyDown(SDL_Scancode c)
 
 void Engine::update()
 {
-
+	player.playerUpdate();
 }
 
 void Engine::render()
@@ -98,7 +103,8 @@ void Engine::render()
 	SDL_SetRenderDrawColor(g_pRenderer, 0, 0, 0, 255);
 	SDL_RenderClear(g_pRenderer); // Clear the screen with the draw color.
 	// Render stuff.
-
+	SDL_RenderCopy(g_pRenderer, m_pTexture, &m_src, &m_dst);
+	player.playerDraw(g_pRenderer);
 	// Draw anew.
 	SDL_RenderPresent(g_pRenderer);
 }
