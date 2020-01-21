@@ -4,6 +4,7 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 #include "Player.h"
+#include "Map.h"
 class Engine
 {
 private:   //Properties
@@ -15,8 +16,10 @@ private:   //Properties
 	SDL_Renderer* g_pRenderer; // This represents the buffer to draw to.
 	SDL_Texture* m_pTexture;
 	SDL_Rect m_src, m_dst;
-	Player player;
-
+	Player* player;
+	Map* map;
+	int m_round;
+	
 private:   //methods
 	bool init(const char* , int , int , int , int, int);        //you could define all these functions inline(copy the whole function including its body here)
 	void wake();
