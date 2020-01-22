@@ -7,22 +7,23 @@ using namespace std;
 #define WIDTH 1024
 #define HEIGHT 768
 #define FPS 60
-float accGravity = 0.2;
-float maxGravity = 1.3;
+float accGravity = 0.4;
+float maxGravity = 1.9;
 float velocityX = 0,velocityY=0;
+bool platform =false;
 
 Player::Player():m_iSpeed(5), m_src{ 0, 0, 32, 64 }, g_iKeystates(SDL_GetKeyboardState(nullptr)), m_dst{ m_src.w, HEIGHT - 5*32-m_src.h  , m_src.w, m_src.h}
 {
 	    m_frame = 0,
 		m_frameMax = 12,
 		m_sprite = 0,
-		m_spriteMax = 4;
+		m_spriteMax = 6;
 		velX = 0,
 		velY = 0;
 		left = false;
 		onGround = false;
 		m_lastPosition = m_dst.y +m_dst.h;
-		jumpVel = 3.0f;
+		jumpVel = 4.0f;
 		jumping = false;
 		gravity = 0.04f;
 	    cout << "Constructing player class...\n";
@@ -30,7 +31,7 @@ Player::Player():m_iSpeed(5), m_src{ 0, 0, 32, 64 }, g_iKeystates(SDL_GetKeyboar
 
 SDL_Texture* Player::loadPlayer(SDL_Renderer* m_pRenderer)
 {
-	m_pTexture= TextureManager::LoadTexture(m_pRenderer, "../Assets/Textures/Cowboy.png");
+	m_pTexture= TextureManager::LoadTexture(m_pRenderer, "../Assets/Textures/CowboyCadet.png");
 	return m_pTexture;
 	
 }
@@ -74,10 +75,10 @@ void Player::playerUpdate(Map *map)
 	if (!onGround)
 	{
 		velocityY += accGravity;
-		/*if (velocityY> maxGravity)
+		if (velocityY> maxGravity)
 		{
 			velocityY = maxGravity;
-		}*/
+		}
 	}
 	if (keyDown(SDL_SCANCODE_S))
 		velocityY = 1.0f;
@@ -91,8 +92,10 @@ void Player::playerUpdate(Map *map)
 	}
 	if (!(keyDown(SDL_SCANCODE_A) || keyDown(SDL_SCANCODE_D)))
 		velocityX = 0;
+
 	velX = m_iSpeed * velocityX;
 	velY = m_iSpeed * velocityY;
+	
 	m_dst.x += velX;
 	checkCollision(velX, 0, map);
 	onGround = false;
@@ -118,7 +121,7 @@ void Player::checkBound()
 void Player::checkCollision(int x, int y, Map* map)
 {
 	int type = 0,top=0,left=0,right=0,bottom=0;
-	
+	SDL_Rect newDst = { m_dst.x+5,m_dst.y,m_dst.w - 5, m_dst.h };
 	for (int row = 0; row < 24; row++)
 		for (int column = 0; column < 32; column++)
 		{
@@ -128,38 +131,25 @@ void Player::checkCollision(int x, int y, Map* map)
 			left = column * 32;
 			right = column * 32 + 32;
 			SDL_Rect tile = { left,top,32,32 };
-			if (type != 0) {
-				if (SDL_HasIntersection(&m_dst, &tile)) {
-					cout << "tile Collision " << row << "  " << column << endl;
+				//	cout << "tile Collision " << row << "  " << column << endl;
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					if (type==1) {
 					if (x > 0) {
-						if ( type == 1) {
 							m_dst.x = left - m_dst.w;
 							velocityX = 0;
-						}
 					}
 					if (x < 0)
 					{
-						if ( type == 1) {
-							m_dst.x = right;
+							m_dst.x= right-5;
 							velocityX = 0;
-						}
 					}
-					if (y > 0 && type==1)
-					{						
+					if (y > 0)
+					{
 						m_dst.y = top - m_dst.h;
 						velocityY = 0;
 						onGround = true;
 					}
-					if(y>0 && type==2)
-					{
-						if(m_dst.y+3*m_dst.h/4<=top)
-						{
-							m_dst.y = top - m_dst.h;
-							velocityY = 0;
-							onGround = true;
-						}
-					}
-					if (y < 0 && type == 1)
+					if (y < 0)
 					{
 						m_dst.y = bottom;
 						velocityY = 0;
@@ -167,6 +157,23 @@ void Player::checkCollision(int x, int y, Map* map)
 
 				}
 			
+			}
+				tile = { left,top,32,10 };
+				newDst = { m_dst.x+5,m_dst.y+15*m_dst.h/16,m_dst.w - 5, m_dst.h/16};
+				if (SDL_HasIntersection(&newDst, &tile)) {
+				 if(type==2)
+					{
+					cout << "type 2 collide : vel"<< velX << "  " << velY <<"\t" ;
+					if (y > 0)
+					{
+						cout << row << "  " << column << endl;
+						//if (m_dst.y +m_dst.h>= top) {
+						m_dst.y = top - m_dst.h;
+						velocityY = 0;
+						onGround = true;
+						//}
+					}
+				}
 			}
 		}
 }
