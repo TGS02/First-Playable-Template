@@ -1,0 +1,17 @@
+﻿  Engine.cpp
+  FSM.cpp
+  Main.cpp
+  Map.cpp
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Map.cpp(144,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Map.cpp(223,22): warning C4018: '<': signed/unsigned mismatch
+  Player.cpp
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Player.cpp(10,23): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Player.cpp(11,23): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Player.cpp(100,18): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Player.cpp(101,18): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Player.cpp(127,11): warning C4101: 'newDst': unreferenced local variable
+C:\Users\mehra\Desktop\git\First-Playable-Template\GAME1007_W01_LabB\Player.cpp(126,11): warning C4101: 'tile': unreferenced local variable
+  TextureManager.cpp
+  Generating Code...
+  LINK : C:\Users\mehra\Desktop\git\First-Playable-Template\Debug\CowboyCadet_FirstPlayable.exe not found or not built by the last incremental link; performing full link
+  GAME1007_W01_LabB.vcxproj -> C:\Users\mehra\Desktop\git\First-Playable-Template\Debug\CowboyCadet_FirstPlayable.exe
