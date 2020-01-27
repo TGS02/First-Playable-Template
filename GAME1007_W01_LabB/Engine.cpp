@@ -4,6 +4,7 @@
 #include "TextureManager.h"
 #include <iostream>
 #include <vector>
+#include  <SDL.h>
 
 #define WIDTH 1024
 #define HEIGHT 768
@@ -31,12 +32,19 @@ bool Engine::init(const char* title, int xpos, int ypos, int width, int height, 
 			g_pRenderer = SDL_CreateRenderer(g_pWindow, -1, 0);
 			if (g_pRenderer != nullptr) // Renderer init success.
 			{
-				m_pTexture = IMG_LoadTexture(g_pRenderer, "../Assets/Textures/Background.png");
+				m_pTexture = IMG_LoadTexture(g_pRenderer, "../Assets/Textures/Background_1.png");
 				map = new Map(g_pRenderer);
 				player = new Player();
 				player->loadPlayer(g_pRenderer);
 			}
 			else return false; // Renderer init fail.
+			if (Mix_Init(MIX_INIT_MP3) != 0) // MIXER INIT success.
+			{
+				Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 4096);
+				m_pMusic = Mix_LoadMUS("../Assets/Audio/bgMusic.mp3");
+			}
+			else return false;
+
 		}
 		else return false; // Window init fail.
 	}
@@ -44,8 +52,12 @@ bool Engine::init(const char* title, int xpos, int ypos, int width, int height, 
 	g_fps = (Uint32)round((1 / (double)FPS) * 1000); // Sets FPS in milliseconds and rounds.
 	g_iKeystates = SDL_GetKeyboardState(nullptr);
 	m_src = { 0,0, 800, 400 };
-	m_dst = { 0,0, WIDTH, HEIGHT };
+	m_dst = { 0,0, WIDTH, HEIGHT / 2 };
+	m_dst2 = { 0,HEIGHT / 2, WIDTH, HEIGHT / 2 };
 	m_round = 0;
+	m_pFSM = new FSM();
+	m_pFSM->ChangeState(new TitleState());
+	Mix_PlayMusic(m_pMusic, -1);
 	g_bRunning = true; // Everything is okay, start the engine.
 	cout << "Success!" << endl;
 	return true;
@@ -83,8 +95,14 @@ void Engine::handleEvents()
 	}
 }
 
+Engine& Engine::Instance()
+{
+	static Engine instance;
+	return instance;
+}
+
 // Keyboard utility function.
-bool Engine::keyDown(SDL_Scancode c)
+bool Engine::KeyDown(SDL_Scancode c)
 {
 	if (g_iKeystates != nullptr)
 	{
@@ -98,29 +116,68 @@ bool Engine::keyDown(SDL_Scancode c)
 
 void Engine::update()
 {
+	m_pFSM->Update();
 	player->playerUpdate(map);
+
 	
 }
 
 void Engine::render()
 {
-	vector<int> num = { 1,2,3,5,12,13,14,15 };
-	SDL_SetRenderDrawColor(g_pRenderer, 255, 255, 255, 255);
-	SDL_RenderClear(g_pRenderer); // Clear the screen with the draw color.
-	SDL_RenderCopy(g_pRenderer, m_pTexture, &m_src, &m_dst);
-	map->DrawMap(g_pRenderer, num); 
-	// Render stuff.
-	player->playerDraw(g_pRenderer);
-	num.clear();
-	num = { 21,22 };
-	map->DrawMap(g_pRenderer, num);
-	// Draw anew.
-	SDL_RenderPresent(g_pRenderer);
+	m_pFSM->Render();
+	
+	
+}
+
+void Engine::renderGameState()
+{
+	
+		SDL_SetRenderDrawColor(g_pRenderer, 255, 255, 255, 255);
+		SDL_RenderClear(g_pRenderer); // Clear the screen with the draw color.
+
+		// Render the overall background
+		//SDL_RenderCopy(g_pRenderer, m_pTexture, &m_src, &m_dst);
+		//SDL_RenderCopy(g_pRenderer, m_pTexture, &m_src, &m_dst2);
+
+		// Render the tiling background
+		vector<int> num = { 1 };
+		map->DrawBG(g_pRenderer, num);
+		num.clear();
+
+		// Render the tiles with z < the player
+		num = { 1,2,3,5,12,13,14,15,16,31,32,33,34,41,42 };
+		map->DrawMap(g_pRenderer, num);
+		num.clear();
+
+		// Render the player
+		player->playerDraw(g_pRenderer);
+
+		// Render tiles with z > the player
+		num = { 21,22 };
+		map->DrawMap(g_pRenderer, num);
+		num.clear();
+
+		// Draw anew.
+		if (dynamic_cast<GameState*> (m_pFSM->GetState().back()))
+		{
+		SDL_RenderPresent(g_pRenderer);
+	}
 }
 
 void Engine::clean()
 {
 	cout << "Cleaning game." << endl;
+	m_pFSM->Clean();
+	delete m_pFSM;
+	m_pFSM = nullptr;
+	map->clean();
+	delete map;
+	map = nullptr;
+	player->clean();
+	delete player;
+	player = nullptr;
+
+	SDL_DestroyTexture(m_pTexture);
 	SDL_DestroyRenderer(g_pRenderer);
 	SDL_DestroyWindow(g_pWindow);
 	SDL_Quit();
@@ -128,6 +185,8 @@ void Engine::clean()
 
 int Engine::run()
 {
+	if (g_bRunning) // What does this do and what can it prevent?
+		return -1;
 	if (init("GAME1007_SDL_Setup", SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0) == false)
 		return 1;
@@ -146,4 +205,14 @@ int Engine::run()
 
 Engine::~Engine()
 {
+}
+
+SDL_Renderer* Engine::GetRenderer()
+{
+	return g_pRenderer;
+}
+
+FSM& Engine::GetFSM()
+{
+	return *m_pFSM;
 }

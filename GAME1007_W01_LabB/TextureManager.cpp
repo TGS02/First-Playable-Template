@@ -16,5 +16,3 @@ void TextureManager::DrawLeft(SDL_Renderer* m_pRenderer, SDL_Texture* tex, SDL_R
 	
 	SDL_RenderCopyEx(m_pRenderer, tex, src, dst, NULL, NULL,	SDL_FLIP_HORIZONTAL);
 }
-
-

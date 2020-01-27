@@ -26,9 +26,11 @@ private:
 	float jumpVel ;
 	bool  jumping;
     float gravity ;
-
-
-
+	bool die;
+	int delayMin, delayMax; // To create a delay after player dies.
+	bool startFlashing;
+	int flashMin, flashMax; // Player starts flashing after dying.
+	int stopMin, stopMax; // Set total time for player to keep flashing.
 
 
 public:
@@ -43,6 +45,6 @@ public:
 	void animate();
 	void checkCollision(int x, int y, Map* map);
 	void checkBound();
-
+	void clean();
 };
 

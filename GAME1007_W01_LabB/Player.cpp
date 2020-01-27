@@ -7,10 +7,9 @@ using namespace std;
 #define WIDTH 1024
 #define HEIGHT 768
 #define FPS 60
-float accGravity = 0.4;
-float maxGravity = 1.9;
+float accGravity = 0.2;
+float maxGravity = 1.3;
 float velocityX = 0,velocityY=0;
-bool platform =false;
 
 Player::Player():m_iSpeed(5), m_src{ 0, 0, 32, 64 }, g_iKeystates(SDL_GetKeyboardState(nullptr)), m_dst{ m_src.w, HEIGHT - 5*32-m_src.h  , m_src.w, m_src.h}
 {
@@ -23,9 +22,17 @@ Player::Player():m_iSpeed(5), m_src{ 0, 0, 32, 64 }, g_iKeystates(SDL_GetKeyboar
 		left = false;
 		onGround = false;
 		m_lastPosition = m_dst.y +m_dst.h;
-		jumpVel = 4.0f;
+		jumpVel = 3.0f;
 		jumping = false;
 		gravity = 0.04f;
+		die = false;
+		delayMin = 0;
+		delayMax = 15;
+		startFlashing = false;
+		flashMin = 0;
+		flashMax = 35;
+		stopMin = 0;
+		stopMax = 100;
 	    cout << "Constructing player class...\n";
 }
 
@@ -68,9 +75,7 @@ bool Player::keyDown(SDL_Scancode c)
 void Player::playerUpdate(Map *map)
 {
 	// This is the main game stuff.
-	if (keyDown(SDL_SCANCODE_W))
-		velocityY = -1.0f;
-	if (keyDown(SDL_SCANCODE_SPACE) && onGround)
+	if (keyDown(SDL_SCANCODE_W) && onGround)
 		velocityY = jumpVel * -1;
 	if (!onGround)
 	{
@@ -92,10 +97,8 @@ void Player::playerUpdate(Map *map)
 	}
 	if (!(keyDown(SDL_SCANCODE_A) || keyDown(SDL_SCANCODE_D)))
 		velocityX = 0;
-
 	velX = m_iSpeed * velocityX;
 	velY = m_iSpeed * velocityY;
-	
 	m_dst.x += velX;
 	checkCollision(velX, 0, map);
 	onGround = false;
@@ -120,9 +123,11 @@ void Player::checkBound()
 
 void Player::checkCollision(int x, int y, Map* map)
 {
-	int type = 0,top=0,left=0,right=0,bottom=0;
-	SDL_Rect newDst = { m_dst.x+5,m_dst.y,m_dst.w - 5, m_dst.h };
+	SDL_Rect tile;
+	SDL_Rect newDst;
+	int type = 0, top = 0, left = 0, right = 0, bottom = 0;
 	for (int row = 0; row < 24; row++)
+	{
 		for (int column = 0; column < 32; column++)
 		{
 			type = map->colMap[row][column];
@@ -131,17 +136,17 @@ void Player::checkCollision(int x, int y, Map* map)
 			left = column * 32;
 			right = column * 32 + 32;
 			SDL_Rect tile = { left,top,32,32 };
-				//	cout << "tile Collision " << row << "  " << column << endl;
+			SDL_Rect newDst = { m_dst.x + 5,m_dst.y,m_dst.w / 2, m_dst.h };
+			if (type == 1) {//Solid tile
 				if (SDL_HasIntersection(&newDst, &tile)) {
-					if (type==1) {
 					if (x > 0) {
-							m_dst.x = left - m_dst.w;
-							velocityX = 0;
+						m_dst.x = left - 3 * m_dst.w / 4;
+						velocityX = 0;
 					}
 					if (x < 0)
 					{
-							m_dst.x= right-5;
-							velocityX = 0;
+						m_dst.x = right - 5;
+						velocityX = 0;
 					}
 					if (y > 0)
 					{
@@ -156,37 +161,157 @@ void Player::checkCollision(int x, int y, Map* map)
 					}
 
 				}
-			
+
 			}
-				tile = { left,top,32,10 };
-				newDst = { m_dst.x+5,m_dst.y+15*m_dst.h/16,m_dst.w - 5, m_dst.h/16};
+			tile = { left + 1,top,30,10 };
+			newDst = { m_dst.x + 5,m_dst.y + 15 * m_dst.h / 16,m_dst.w/2 , m_dst.h / 16 };
+			if (type == 2) {//platform
 				if (SDL_HasIntersection(&newDst, &tile)) {
-				 if(type==2)
 					{
-					cout << "type 2 collide : vel"<< velX << "  " << velY <<"\t" ;
-					if (y > 0)
-					{
-						cout << row << "  " << column << endl;
-						//if (m_dst.y +m_dst.h>= top) {
-						m_dst.y = top - m_dst.h;
-						velocityY = 0;
-						onGround = true;
-						//}
+						cout << "type 2 collide : vel" << velX << "  " << velY << "\t";
+						if (y > 0)
+						{
+							cout << row << "  " << column << endl;
+							//if (m_dst.y +m_dst.h>= top) {
+							m_dst.y = top - m_dst.h;
+							velocityY = 0;
+							onGround = true;
+							//}
+						}
 					}
 				}
 			}
+			newDst = { m_dst.x + 5,m_dst.y ,m_dst.w - 5, 3*m_dst.h/4};
+			tile = { left  ,top + 15,32,17 };
+			if (type == 4) //Acid1
+			{
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					{
+						cout << "collide 4" << endl;
+						die = true;
+					}
+				}
+			}
+			newDst = { m_dst.x ,m_dst.y ,m_dst.w , m_dst.h  };
+			tile = { left  ,top ,32,32 };
+			if(type==5)// Acid2
+			{
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					{
+						cout << "collide 5" << endl;
+						die = true;
+					}
+				}
+
+			}
+			newDst = { m_dst.x+5 ,m_dst.y ,m_dst.w-5 , m_dst.h };
+			tile = { left  ,top ,15,30 };
+			if (type == 3)//Spike Right
+			{
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					{
+						cout << "collide 5" << endl;
+						die = true;
+					}
+				}
+
+			}
+			newDst = { m_dst.x + 5 ,m_dst.y ,m_dst.w - 5 , m_dst.h };
+			tile = { left+13  ,top ,16,25 };
+			if (type == 6)//Spike left
+			{
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					{
+						cout << "collide 5" << endl;
+						die = true;
+					}
+				}
+
+			}
+			newDst = { m_dst.x + 5 ,m_dst.y ,m_dst.w - 5 , m_dst.h };
+			tile = { left ,top ,25,15 };
+			if (type == 7)//Spike Down
+			{
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					{
+						cout << "collide 5" << endl;
+						die = true;
+					}
+				}
+
+			}
+			newDst = { m_dst.x + 5 ,m_dst.y ,m_dst.w - 5 , m_dst.h };
+			tile = { left ,top+15 ,25,20 };
+			if (type == 8)//Spike up
+			{
+				if (SDL_HasIntersection(&newDst, &tile)) {
+					{
+						cout << "collide 5" << endl;
+						die = true;
+					}
+				}
+
+			}
+			
 		}
+	}
 }
 
 void Player::playerDraw(SDL_Renderer* g_pRenderer)
 {
-	if (!left)
+	if (!left && !die)
 		TextureManager::Draw(g_pRenderer, m_pTexture, &m_src, &m_dst);
-	else
+	if(left && !die)
 		TextureManager::DrawLeft(g_pRenderer, m_pTexture, &m_src, &m_dst);
+	if(die)
+	{
+		if (delayMin == delayMax)
+		{
+			m_dst = { m_src.w, HEIGHT - 5 * 32 - m_src.h  , m_src.w, m_src.h };
+			left = false;
+			die = false;
+			velY = 0;
+			velX = 0;
+			onGround = true;
+			delayMin = 0;
+			startFlashing = true;
+		}
+		delayMin++;
+	}
+	if (startFlashing)
+	{
+		if (stopMin!=stopMax)
+		{
+			if (flashMin == flashMax / 2)
+			{
+				SDL_SetTextureAlphaMod(m_pTexture, 32);
+				TextureManager::Draw(g_pRenderer, m_pTexture, &m_src, &m_dst);
+			}
+			if (flashMin == flashMax)
+			{
+				SDL_SetTextureAlphaMod(m_pTexture, 255);
+				TextureManager::Draw(g_pRenderer, m_pTexture, &m_src, &m_dst);
+				flashMin = 0;
+			}
+			flashMin++;
+			stopMin++;
+		}
+		if (stopMin == stopMax)
+		{
+			SDL_SetTextureAlphaMod(m_pTexture, 255);
+			TextureManager::Draw(g_pRenderer, m_pTexture, &m_src, &m_dst);
+			startFlashing = false;
+			stopMin = 0;
+		}
+	}
 }
 
 Player::~Player()
 {
 
+}
+void Player::clean()
+{
+
+	SDL_DestroyTexture(m_pTexture);
 }
